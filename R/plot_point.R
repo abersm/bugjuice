@@ -3,7 +3,6 @@
 #' @param df Data frame in long format containing continuous variable, categorical or integer variable, and grouping variable
 #' @param formula y ~ x format
 #' @param grouping_var Variable to group by. Enter as quoted or unquoted variable name
-#' @param ... Arguments passed to `theme_fn()`
 #' @param x,y Variables for x  and y axis, respectively. Enter as quoted or unquoted variable names
 #' @param x_order Order of x values. Enter as character vector. Default is `NULL`
 #' @param rev_x_order If `FALSE` (default), order of x axis variable is not reversed
@@ -69,6 +68,7 @@
 #' @param p_spaces If `TRUE` (default), spaces placed between p, equality symbol, and p-value in significance annotation. If `FALSE`, no spaces placed between p, equality symbol, and p-value in significance annotation. Only relevant when `stars = FALSE`
 #' @param seed Length 1 integer vector to set seed for reproducibility when using jittering. Default is `1234`
 #' @param theme_fn Theme function. Default is `theme_custom`
+#' @param ... Arguments passed to `theme_fn()`
 #' @importFrom dplyr select rename filter group_by ungroup mutate left_join summarize n_distinct
 #' @importFrom scales pretty_breaks trans_breaks trans_format math_format
 #' @import ggplot2
@@ -77,11 +77,13 @@ plot_point <- function(
   df,
   formula = NULL,
   grouping_var = NULL,
-  ...,
   x = NULL, y = NULL,
-  beeswarm = FALSE, beeswarm_method = "smiley",
+  beeswarm = FALSE,
+  beeswarm_method = "smiley",
   width = 0.2,
-  beeswarm_width = width, n_bins = 25, band_width = 1 + n_bins/5,
+  beeswarm_width = width,
+  n_bins = 25,
+  band_width = 1 + n_bins/5,
   dodge = if (beeswarm) 0.8 else 0.7,
   jitter_width = width,
   x_order = NULL,
@@ -107,16 +109,25 @@ plot_point <- function(
   legend_title = "",
   y_title = waiver(), y_axis_title = y_title,
   y_scale = "regular",
-  y_axis_breaks = NULL, y_axis_labels = NULL, breaks_fn = pretty, n_breaks = 4,
-  y_min = NULL, y_max = NULL,
+  y_axis_breaks = NULL,
+  y_axis_labels = NULL,
+  breaks_fn = pretty,
+  n_breaks = 4,
+  y_min = NULL,
+  y_max = NULL,
   expand_y = 0.1,
   censor_fn = rescale_none,
-  x_title = waiver(), x_axis_title = x_title,
-  x_axis_breaks = NULL, x_axis_labels = NULL,
+  x_title = waiver(),
+  x_axis_title = x_title,
+  x_axis_breaks = NULL,
+  x_axis_labels = NULL,
   expand_x = waiver(),
   plot_title = NULL,
-  show_sig = TRUE, sig_method = "p_by_normality",
-  stars = TRUE, show_ns = TRUE, ns_symbol = "ns",
+  show_sig = TRUE,
+  sig_method = "p_by_normality",
+  stars = TRUE,
+  show_ns = TRUE,
+  ns_symbol = "ns",
   sig_bar_nudge = if (y_scale == "log") 0.9 else 0.11,
   sig_star_nudge = if (y_scale == "log") -0.45 else sig_bar_nudge - 0.03,
   sig_text_nudge = if (y_scale == "log") 0.5 else sig_bar_nudge + 0.03,
@@ -129,7 +140,8 @@ plot_point <- function(
   p_case = "upper",
   p_spaces = TRUE,
   seed = 1234,
-  theme_fn = theme_custom) {
+  theme_fn = theme_custom,
+  ...) {
   # Plotting function
   plot_fn <- "plot_point"
 
@@ -139,20 +151,6 @@ plot_point <- function(
     .Random.seed <<- old
   })
   set.seed(seed)
-
-  # Dots
-  if (...length() > 0L) {
-    dots <- eval(substitute(alist(...)), envir = parent.frame())
-    if (is.null(names(dots))) {
-      subset_criteria <- unlist(lapply(dots, function(z) eval(z, envir = df)), use.names = FALSE)
-      df <- df[subset_criteria, ]
-      theme_dots <- FALSE
-    } else {
-      theme_dots <- TRUE
-    }
-  } else {
-    theme_dots <- FALSE
-  }
 
   # Data
   df <- dplyr::select(df, grouping_var = {{grouping_var}}, point_color_var = {{point_color_var}}, point_shape_var = {{point_shape_var}}, dplyr::everything())
@@ -268,8 +266,7 @@ plot_point <- function(
   p <- p + scale_x_continuous(name = x_axis_title, breaks = x_breaks, labels = x_labels, expand = expand_x)
 
   # Plot title/theme
-  p <- p + coord_cartesian(clip = "off", default = TRUE) + ggtitle(plot_title)
-  p <- if (theme_dots) p + theme_fn(...) else p + theme_fn()
+  p <- p + coord_cartesian(clip = "off", default = TRUE) + ggtitle(plot_title) + theme_fn(...)
 
   # Significance annotation
   n_groups <- n_unique(df$grouping_var, na.rm = FALSE)
